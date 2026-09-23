@@ -1,0 +1,3 @@
+C:/Users/msaso/Desktop/Kodok/Cpp/TCP-IP/TCP-IP/out/build/x64-debug/CMakeFiles/main.dir
+C:/Users/msaso/Desktop/Kodok/Cpp/TCP-IP/TCP-IP/out/build/x64-debug/CMakeFiles/edit_cache.dir
+C:/Users/msaso/Desktop/Kodok/Cpp/TCP-IP/TCP-IP/out/build/x64-debug/CMakeFiles/rebuild_cache.dir
