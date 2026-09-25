@@ -2,3 +2,4 @@
 *.pdb
 *.idb
 */target
+*/out
