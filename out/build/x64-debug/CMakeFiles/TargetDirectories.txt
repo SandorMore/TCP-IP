@@ -1,3 +1,0 @@
-C:/Users/Sanyi/Desktop/TCP-IP/out/build/x64-debug/CMakeFiles/main.dir
-C:/Users/Sanyi/Desktop/TCP-IP/out/build/x64-debug/CMakeFiles/edit_cache.dir
-C:/Users/Sanyi/Desktop/TCP-IP/out/build/x64-debug/CMakeFiles/rebuild_cache.dir
