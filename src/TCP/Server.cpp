@@ -1,81 +1,95 @@
 #include "Server.hpp"
-#include <string_view>
 
-void Server::manage(int conn_fd)
+#include <arpa/inet.h>
+#include <iostream>
+#include <netinet/in.h>
+#include <string>
+#include <sys/socket.h>
+#include <unistd.h>
+
+Server::~Server()
+{
+    if(conn_fd != -1) close(conn_fd);
+    if(sock_fd != -1) close(sock_fd);
+}
+
+void Server::manage()
 {
     for(;;)
     {
-        bzero(buffer, max);
-
-        read(conn_fd, buffer, sizeof(buffer));
-        
-        std::cout << buffer << "\n";
-        
-        bzero(buffer, max);
-        n = 0;
-
-        while((buffer[n++] = getchar()) != '\n');
-
-        write(conn_fd, buffer, sizeof(buffer));
-
-        if(std::string_view(buffer) == "exit")
+        ssize_t received = read(conn_fd, buffer, sizeof(buffer) - 1);
+        if(received <= 0)
         {
-            std::cout << "Server exits" << "\n";
-            break;
+            std::cout << "Client disconnected\n";
+            return;
+        }
+        buffer[received] = '\0';
+
+        std::cout << "From client: " << buffer << "\n";
+
+        if(std::string(buffer) == "exit")
+        {
+            std::cout << "Server exits\n";
+            return;
+        }
+
+        std::cout << "To client: " << std::flush;
+        std::string line;
+        if(!std::getline(std::cin, line)) line = "exit";
+
+        write(conn_fd, line.data(), line.size());
+
+        if(line == "exit")
+        {
+            std::cout << "Server exits\n";
+            return;
         }
     }
 }
 
-void Server::drive(int& sock_fd, int& conn_fd, unsigned len)
+bool Server::drive()
 {
-    struct sockaddr_in servaddr, cli;
-
     sock_fd = socket(AF_INET, SOCK_STREAM, 0);
-
     if(sock_fd == -1)
     {
         std::cout << "Error during socket initialization\n";
-        return;
+        return false;
     }
-    else 
-    {
-        std::cout << "Socket created sucessfully\n";
-    }
+    std::cout << "Socket created successfully\n";
 
-    bzero(&servaddr, sizeof(servaddr));
+    // Allow restarting the server right away without "address already in use"
+    int opt = 1;
+    setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
+    sockaddr_in servaddr{};
     servaddr.sin_family = AF_INET;
     servaddr.sin_port = htons(port);
-    servaddr.sin_addr.s_addr = htonl(INADDR_ANY); 
+    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 
-    if((bind(sock_fd, (struct sockaddr*)&servaddr, sizeof(servaddr))) != 0)
+    if(bind(sock_fd, reinterpret_cast<sockaddr*>(&servaddr), sizeof(servaddr)) != 0)
     {
         std::cout << "Socket bind failed\n";
-        return;
+        return false;
     }
-    else
-    {
-        std::cout << "Socket sucessfully created\n";
-    }
+    std::cout << "Socket successfully bound\n";
 
     if(listen(sock_fd, 5) != 0)
     {
         std::cout << "Listen failed\n";
+        return false;
     }
-    else 
-    {
-        std::cout << "Server listening...\n";
-    }
+    std::cout << "Server listening on port " << port << "...\n";
 
-    conn_fd = accept(sock_fd, (struct sockaddr*)&cli, &len);
-    if(conn_fd <  0)
+    sockaddr_in cli{};
+    socklen_t len = sizeof(cli);
+    conn_fd = accept(sock_fd, reinterpret_cast<sockaddr*>(&cli), &len);
+    if(conn_fd < 0)
     {
         std::cout << "Server accept failed\n";
+        return false;
     }
-    else 
-    {
-        std::cout << "server accepting the client\n";
-    }
-    manage(conn_fd);
-    close(sock_fd);
+    std::cout << "Server accepted the client\n";
+
+    manage();
+    return true;
 }

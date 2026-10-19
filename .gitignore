@@ -3,5 +3,5 @@
 *.idb
 */target
 */out
-*/build
-/.vscode
+/build
+/.vscode/build

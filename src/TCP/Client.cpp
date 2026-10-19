@@ -1,66 +1,77 @@
 #include "Client.hpp"
-#include <string_view>
 
-void Client::manage(int sock_fd)
+#include <arpa/inet.h>
+#include <iostream>
+#include <netinet/in.h>
+#include <string>
+#include <sys/socket.h>
+#include <unistd.h>
+
+Client::~Client()
+{
+    if(sock_fd != -1) close(sock_fd);
+}
+
+void Client::manage()
 {
     for(;;)
     {
-        bzero(buffer, sizeof(buffer));
-        
-        read(sock_fd, buffer, sizeof(buffer));
-        
-        std::cout << buffer << "\n";
+        std::cout << "To server: " << std::flush;
+        std::string line;
+        if(!std::getline(std::cin, line)) line = "exit";
 
-        bzero(buffer, sizeof(buffer));
+        write(sock_fd, line.data(), line.size());
 
-        n = 0;
-        while((buffer[n++] = getchar()) != '\n');
+        if(line == "exit")
+        {
+            std::cout << "Client exit...\n";
+            return;
+        }
 
-        write(sock_fd, buffer, sizeof(buffer));
-        
-        bzero(buffer, sizeof(buffer));
+        ssize_t received = read(sock_fd, buffer, sizeof(buffer) - 1);
+        if(received <= 0)
+        {
+            std::cout << "Server disconnected\n";
+            return;
+        }
+        buffer[received] = '\0';
 
-        read(sock_fd, buffer, sizeof(buffer));
         std::cout << "From server: " << buffer << "\n";
 
-        if(std::string_view(buffer) == "exit")
+        if(std::string(buffer) == "exit")
         {
-            std::cout << "Client exit..." << "\n";
+            std::cout << "Client exit...\n";
             return;
         }
     }
 }
 
-void Client::drive(int& sock_fd, int& conn_fd)
+bool Client::drive(const char* address)
 {
-    struct sockaddr_in servaddr, cli;
     sock_fd = socket(AF_INET, SOCK_STREAM, 0);
-
     if(sock_fd == -1)
     {
-        std::cout << "Socket creation failed" << "\n";
-        return;
+        std::cout << "Socket creation failed\n";
+        return false;
     }
-    else 
-    {
-        std::cout << "Socket created sucessfully" << "\n";
-    }
+    std::cout << "Socket created successfully\n";
 
-    bzero(&servaddr, sizeof(sockaddr));
+    sockaddr_in servaddr{};
     servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
     servaddr.sin_port = htons(port);
-
-    if(connect(sock_fd, (sockaddr*)&servaddr, sizeof(servaddr)) != 0)
+    if(inet_pton(AF_INET, address, &servaddr.sin_addr) != 1)
     {
-        std::cout << "Server creation failed" << "\n";
-        return;
-    }
-    else
-    {
-        std::cout << "Connection sucessful" << "\n";
+        std::cout << "Invalid address: " << address << "\n";
+        return false;
     }
 
-    manage(sock_fd);
-    close(sock_fd);
+    if(connect(sock_fd, reinterpret_cast<sockaddr*>(&servaddr), sizeof(servaddr)) != 0)
+    {
+        std::cout << "Connection to server failed\n";
+        return false;
+    }
+    std::cout << "Connection successful\n";
+
+    manage();
+    return true;
 }

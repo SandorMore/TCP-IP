@@ -1,22 +1,15 @@
-#include <iostream>
-#include <netdb.h>
-#include <strings.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <unistd.h>
-#include <stddef.h>
-#include <arpa/inet.h>
+#pragma once
 
-constexpr int max = 80;
-constexpr int port = 8080;
+#include "Common.hpp"
 
 class Client final 
 {
 public:
-    void manage(int);
-    void drive(int& , int&);
+    ~Client();
+    bool drive(const char* address = "127.0.0.1");
 private:
-    char buffer[max];
-    int n;
+    void manage();
+
+    char buffer[buffer_size]{};
+    int sock_fd{-1};
 };

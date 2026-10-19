@@ -1,23 +1,16 @@
-#include <iostream>
-#include <netdb.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <netinet/in.h>
-#include <string>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <strings.h>
+#pragma once
 
-constexpr int max = 80;
-constexpr int port = 8080;
+#include "Common.hpp"
 
-struct Server 
+class Server final
 {
 public:
-    void manage(int);
-    void drive(int&, int&, unsigned);
+    ~Server();
+    bool drive();
 private:
-    char buffer[max];
-    int n{};
+    void manage();
+
+    char buffer[buffer_size]{};
+    int sock_fd{-1};
+    int conn_fd{-1};
 };
